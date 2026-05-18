@@ -5,44 +5,32 @@
 mod console;
 mod lang_items;
 mod sbi;
+mod syscall;
+mod trap;
+mod batch;
 
 use core::arch::global_asm;
-global_asm!(include_str!("entry.asm"));
 
-// 修复：extern 放进 unsafe
-unsafe extern "C" {
-    fn sbss();
-    fn ebss();
-}
+global_asm!(include_str!("entry.asm"));
+global_asm!(include_str!("link_app.S"));
 
 fn clear_bss() {
-    unsafe {
-        (sbss as usize..ebss as usize).for_each(|a| (a as *mut u8).write_volatile(0));
+    unsafe extern "C" {
+        fn sbss();
+        fn ebss();
+    }
+    let s = sbss as *const () as usize;
+    let e = ebss as *const () as usize;
+    for a in s..e {
+        unsafe { (a as *mut u8).write_volatile(0) };
     }
 }
 
 #[unsafe(no_mangle)]
 pub fn rust_main() -> ! {
-    // 修复：extern 放进 unsafe
-    unsafe extern "C" {
-        fn stext();
-        fn etext();
-        fn srodata();
-        fn erodata();
-        fn sdata();
-        fn edata();
-        fn boot_stack();
-        fn boot_stack_top();
-    }
-
     clear_bss();
-
-    println!("Hello, world!");
-    println!(".text [{:#x}, {:#x})", stext as usize, etext as usize);
-    println!(".rodata [{:#x}, {:#x})", srodata as usize, erodata as usize);
-    println!(".data [{:#x}, {:#x})", sdata as usize, edata as usize);
-    println!("boot_stack [{:#x}, {:#x})", boot_stack as usize, boot_stack_top as usize);
-    println!(".bss [{:#x}, {:#x})", sbss as usize, ebss as usize);
-
-    panic!("Shutdown machine!");
+    println!("[kernel] Hello, kernel!");
+    trap::init();
+    batch::init();
+    batch::run_next_app();
 }
