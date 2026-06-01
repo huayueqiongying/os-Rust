@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pandoc \"D:/实验报告4.docx\" -o /tmp/report4.md)",
+      "Read(//tmp/**)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(mkdir -p /tmp/report4)",
+      "Bash(unzip -o \"D:/实验报告4.docx\" -d /tmp/report4/)",
+      "Read(//c/Users/liliangchao/AppData/Local/Programs/**)",
+      "Read(//c/Program Files/**)",
+      "Bash(ls \"/c/Python\"*/python.exe)",
+      "Bash(node -e \"console.log\\('node works'\\)\")",
+      "Bash(node *)",
+      "Bash(npm install *)",
+      "Bash(mount)",
+      "Bash(unzip -o \"D:/实验报告4.docx\" -d /d/GardenerOS/tmp_report4_clean/)",
+      "Bash(cp /d/GardenerOS/tmp_report4_clean/word/document.xml tmp_report4/word/document.xml)",
+      "Bash(rm -f \"D:/实验报告4.docx\")",
+      "Bash(zip -r \"D:/实验报告4.docx\" .)",
+      "Bash(powershell -Command \"Compress-Archive -Path 'D:\\\\GardenerOS\\\\OS-CODE\\\\tmp_report4\\\\*' -DestinationPath 'D:\\\\实验报告4_new.zip' -Force\")",
+      "Bash(mv \"D:/实验报告4_new.zip\" \"D:/实验报告4.docx\")",
+      "Read(//d//**)",
+      "Bash(unzip -l \"D:/实验报告4.docx\")",
+      "Bash(pandoc \"D:/实验报告4.docx\" -o /tmp/report4_final.md)",
+      "Bash(make build *)",
+      "Bash(cargo build *)",
+      "Bash(xxd D:/GardenerOS/OS-CODE/user/target/riscv64gc-unknown-none-elf/release/00hello_world.bin)",
+      "Bash(xxd D:/GardenerOS/OS-CODE/user/target/riscv64gc-unknown-none-elf/release/00write_a.bin)"
+    ]
+  }
+}

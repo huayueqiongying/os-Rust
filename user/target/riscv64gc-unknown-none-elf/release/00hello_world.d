@@ -1,1 +1,1 @@
-/mnt/OS-CODE/user/target/riscv64gc-unknown-none-elf/release/00hello_world: /mnt/OS-CODE/user/src/bin/00hello_world.rs /mnt/OS-CODE/user/src/console.rs /mnt/OS-CODE/user/src/lang_items.rs /mnt/OS-CODE/user/src/lib.rs /mnt/OS-CODE/user/src/syscall.rs
+/mnt/OS-CODE/user/target/riscv64gc-unknown-none-elf/release/00hello_world: /mnt/OS-CODE/user/src/bin/00hello_world.rs /mnt/OS-CODE/user/src/lib.rs /mnt/OS-CODE/user/src/syscall.rs

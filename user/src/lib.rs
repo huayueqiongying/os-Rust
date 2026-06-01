@@ -1,37 +1,61 @@
 #![no_std]
-#![feature(linkage)]
-#![feature(lang_items)]
+#![no_main]
+#![feature(asm_experimental_arch)]
 
-#[macro_use]
-pub mod console;
 mod syscall;
-mod lang_items;
+pub use syscall::sys_yield;
+pub use syscall::sys_exit;
+pub use syscall::yield_;
 
-use syscall::*;
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => ({
+        use core::fmt::Write;
+        let _ = write!($crate::UartWriter, $($arg)*);
+    });
+}
 
-pub fn write(fd: usize, buf: &[u8]) -> isize { sys_write(fd, buf) }
-pub fn exit(exit_code: i32) -> isize { sys_exit(exit_code) }
+#[macro_export]
+macro_rules! println {
+    ($($arg:tt)*) => ({
+        use core::fmt::Write;
+        let _ = writeln!($crate::UartWriter, $($arg)*);
+    });
+}
 
-fn clear_bss() {
-    unsafe extern "C" {
-        fn start_bss();
-        fn end_bss();
+pub struct UartWriter;
+
+impl core::fmt::Write for UartWriter {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        for &b in s.as_bytes() {
+            unsafe {
+                core::arch::asm!(
+                    "li a0, 1",
+                    "mv a1, {c}",
+                    "li a7, 64",
+                    "ecall",
+                    c = in(reg) b,
+                    out("a0") _,
+                    out("a1") _,
+                    out("a7") _
+                );
+            }
+        }
+        Ok(())
     }
-    let start = start_bss as *const () as usize;
-    let end = end_bss as *const () as usize;
-    (start..end).for_each(|a| unsafe { (a as *mut u8).write_volatile(0) });
 }
 
-#[unsafe(no_mangle)]
 #[unsafe(link_section = ".text.entry")]
-pub extern "C" fn _start() -> ! {
-    clear_bss();
-    exit(main());
-    loop {}
+#[unsafe(no_mangle)]
+unsafe extern "C" fn _start() -> ! {
+    unsafe extern "C" {
+        fn main() -> i32;
+    }
+    syscall::sys_exit(unsafe { main() });
+    unreachable!()
 }
 
-#[linkage = "weak"]
-#[unsafe(no_mangle)]
-fn main() -> i32 {
-    panic!("no main!");
+#[panic_handler]
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+    loop {}
 }

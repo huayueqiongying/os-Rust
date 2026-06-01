@@ -21,25 +21,25 @@ fn insert_app_data() -> Result<()> {
         .collect();
     apps.sort();
 
-    writeln!(f, "    .align 3");
-    writeln!(f, "    .section .data");
-    writeln!(f, "    .global _num_app");
-    writeln!(f, "_num_app:");
-    writeln!(f, "    .quad {}", apps.len());
+    let _ = writeln!(f, "    .align 3");
+    let _ = writeln!(f, "    .section .data");
+    let _ = writeln!(f, "    .global _num_app");
+    let _ = writeln!(f, "_num_app:");
+    let _ = writeln!(f, "    .quad {}", apps.len());
 
     for i in 0..apps.len() {
-        writeln!(f, "    .quad app_{}_start", i);
+        let _ = writeln!(f, "    .quad app_{}_start", i);
     }
-    writeln!(f, "    .quad app_{}_end", apps.len() - 1);
+    let _ = writeln!(f, "    .quad app_{}_end", apps.len() - 1);
 
     for (idx, app) in apps.iter().enumerate() {
-        writeln!(f, "");
-        writeln!(f, "    .section .data");
-        writeln!(f, "    .global app_{0}_start", idx);
-        writeln!(f, "    .global app_{0}_end", idx);
-        writeln!(f, "app_{0}_start:", idx);
-        writeln!(f, "    .incbin \"../user/target/riscv64gc-unknown-none-elf/release/{}.bin\"", app);
-        writeln!(f, "app_{0}_end:", idx);
+        let _ = writeln!(f, "");
+        let _ = writeln!(f, "    .section .data");
+        let _ = writeln!(f, "    .global app_{0}_start", idx);
+        let _ = writeln!(f, "    .global app_{0}_end", idx);
+        let _ = writeln!(f, "app_{0}_start:", idx);
+        let _ = writeln!(f, "    .incbin \"../user/target/riscv64gc-unknown-none-elf/release/{}.bin\"", app);
+        let _ = writeln!(f, "app_{0}_end:", idx);
     }
 
     Ok(())

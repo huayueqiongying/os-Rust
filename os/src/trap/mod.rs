@@ -1,41 +1,36 @@
-use core::arch::global_asm;
-use riscv::register::{stvec, mtvec::TrapMode, scause, stval};
+use riscv::register::{
+    stvec, scause, stval, sepc,
+    scause::{Trap, Exception, Interrupt}
+};
 use crate::syscall::syscall;
-use crate::batch::run_next_app;
+use crate::loader::TrapContext;
+use crate::task::exit_current_and_run_next;
+use core::arch::global_asm;
 
 global_asm!(include_str!("trap.S"));
-
-mod context;
-pub use context::TrapContext;
 
 pub fn init() {
     unsafe extern "C" { fn __alltraps(); }
     unsafe {
-        stvec::write(__alltraps as *const () as usize, TrapMode::Direct);
+        stvec::write(__alltraps as usize, stvec::TrapMode::Direct);
     }
 }
 
 #[unsafe(no_mangle)]
 pub fn trap_handler(cx: &mut TrapContext) -> &mut TrapContext {
-    let cause = scause::read().cause();
-    let stv = stval::read();
+    let scause_val = scause::read();
+    let cause = scause_val.cause();
     match cause {
-        scause::Trap::Exception(scause::Exception::UserEnvCall) => {
+        Trap::Exception(Exception::UserEnvCall) => {
             cx.sepc += 4;
             cx.x[10] = syscall(cx.x[17], [cx.x[10], cx.x[11], cx.x[12]]) as usize;
+            cx
         }
-        scause::Trap::Exception(scause::Exception::StoreFault) |
-        scause::Trap::Exception(scause::Exception::StorePageFault) => {
-            println!("[kernel] Store PageFault, kill app");
-            run_next_app();
-        }
-        scause::Trap::Exception(scause::Exception::IllegalInstruction) => {
-            println!("[kernel] IllegalInstruction, kill app");
-            run_next_app();
-        }
-        other => {
-            panic!("unhandled trap: {:?}, stval={:#x}", other, stv);
+        _ => {
+            println!("[kernel] trap in app: scause={:#x}, sepc={:#x}, stval={:#x}",
+                     scause_val.bits(), sepc::read(), stval::read());
+            exit_current_and_run_next();
+            loop {}
         }
     }
-    cx
 }
