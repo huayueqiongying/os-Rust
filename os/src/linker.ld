@@ -10,6 +10,10 @@ SECTIONS
     stext = .;
     .text : {
         *(.text.entry)
+        . = ALIGN(4K);
+        strampoline = .;
+        *(.text.trampoline);
+        . = ALIGN(4K);
         *(.text .text.*)
     }
     . = ALIGN(4K);
@@ -32,6 +36,7 @@ SECTIONS
     edata = .;
 
     .bss : {
+        sbss_with_stack = .;
         *(.bss.stack)
         sbss = .;
         *(.bss .bss.*)

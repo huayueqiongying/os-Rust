@@ -1,8 +1,7 @@
-/mnt/OS-CODE/user/target/riscv64gc-unknown-none-elf/release/deps/user_lib-4f55951a26998596.d: src/lib.rs src/syscall.rs
+/mnt/OS-CODE/user/target/riscv64gc-unknown-none-elf/release/deps/user_lib-4f55951a26998596.d: src/lib.rs
 
-/mnt/OS-CODE/user/target/riscv64gc-unknown-none-elf/release/deps/libuser_lib-4f55951a26998596.rlib: src/lib.rs src/syscall.rs
+/mnt/OS-CODE/user/target/riscv64gc-unknown-none-elf/release/deps/libuser_lib-4f55951a26998596.rlib: src/lib.rs
 
-/mnt/OS-CODE/user/target/riscv64gc-unknown-none-elf/release/deps/libuser_lib-4f55951a26998596.rmeta: src/lib.rs src/syscall.rs
+/mnt/OS-CODE/user/target/riscv64gc-unknown-none-elf/release/deps/libuser_lib-4f55951a26998596.rmeta: src/lib.rs
 
 src/lib.rs:
-src/syscall.rs:

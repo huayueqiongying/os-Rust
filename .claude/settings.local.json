@@ -27,7 +27,9 @@
       "Bash(make build *)",
       "Bash(cargo build *)",
       "Bash(xxd D:/GardenerOS/OS-CODE/user/target/riscv64gc-unknown-none-elf/release/00hello_world.bin)",
-      "Bash(xxd D:/GardenerOS/OS-CODE/user/target/riscv64gc-unknown-none-elf/release/00write_a.bin)"
+      "Bash(xxd D:/GardenerOS/OS-CODE/user/target/riscv64gc-unknown-none-elf/release/00write_a.bin)",
+      "Bash(find D:\\\\\\\\GardenerOS\\\\\\\\OS-CODE -type f -name \"*.rs\" -o -name \"*.toml\" -o -name \"*.ld\" -o -name \"*.S\" -o -name \"Makefile\")",
+      "Bash(pandoc *)"
     ]
   }
 }

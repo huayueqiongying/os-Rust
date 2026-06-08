@@ -1,54 +1,92 @@
 #![no_std]
 #![no_main]
-#![feature(asm_experimental_arch)]
-mod syscall;
-pub use syscall::sys_yield;
-pub use syscall::sys_exit;
-pub use syscall::yield_;
-pub use syscall::sys_get_time;
+
+use core::arch::asm;
+
+const SYSCALL_WRITE: usize = 64;
+const SYSCALL_EXIT: usize = 93;
+const SYSCALL_YIELD: usize = 124;
+const SYSCALL_GETTIMEOFDAY: usize = 169;
+
+fn syscall(id: usize, args: [usize; 3]) -> isize {
+    let mut ret: isize;
+    unsafe {
+        asm!(
+            "ecall",
+            inlateout("x10") args[0] => ret,
+            in("x11") args[1],
+            in("x12") args[2],
+            in("x17") id
+        );
+    }
+    ret
+}
+
+pub fn sys_write(fd: usize, buffer: &[u8]) -> isize {
+    syscall(SYSCALL_WRITE, [fd, buffer.as_ptr() as usize, buffer.len()])
+}
+
+pub fn sys_exit(exit_code: i32) -> isize {
+    syscall(SYSCALL_EXIT, [exit_code as usize, 0, 0])
+}
+
+pub fn sys_yield() -> isize {
+    syscall(SYSCALL_YIELD, [0, 0, 0])
+}
+
+pub fn sys_get_time() -> isize {
+    syscall(SYSCALL_GETTIMEOFDAY, [0, 0, 0])
+}
+
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => ({
-        use core::fmt::Write;
-        let _ = write!($crate::UartWriter, $($arg)*);
+        $crate::io::_print(format_args!($($arg)*));
     });
 }
+
 #[macro_export]
 macro_rules! println {
-    ($($arg:tt)*) => ({
-        use core::fmt::Write;
-        let _ = writeln!($crate::UartWriter, $($arg)*);
-    });
+    () => ($crate::print!("\n"));
+    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
-pub struct UartWriter;
-impl core::fmt::Write for UartWriter {
-    fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        for &b in s.as_bytes() {
-            unsafe {
-                core::arch::asm!(
-                    "li a0, 1",
-                    "mv a1, {c}",
-                    "li a7, 64",
-                    "ecall",
-                    c = in(reg) b,
-                    out("a0") _,
-                    out("a1") _,
-                    out("a7") _
-                );
-            }
+
+pub mod io {
+    use core::fmt::{self, Write};
+    struct Stdout;
+
+    impl Write for Stdout {
+        fn write_str(&mut self, s: &str) -> fmt::Result {
+            super::sys_write(1, s.as_bytes());
+            Ok(())
         }
-        Ok(())
+    }
+
+    pub fn _print(args: fmt::Arguments) {
+        Stdout.write_fmt(args).unwrap();
     }
 }
-#[unsafe(link_section = ".text.entry")]
+
 #[unsafe(no_mangle)]
-unsafe extern "C" fn _start() -> ! {
-    unsafe extern "C" { fn main() -> i32; }
-    syscall::sys_exit(unsafe { main() });
-    unreachable!()
+#[unsafe(link_section = ".text.entry")]
+pub unsafe extern "C" fn _start() -> ! {
+    unsafe extern "Rust" {
+        fn main();
+    }
+    unsafe { main(); }
+    sys_exit(0);
+    loop {}
 }
+
+pub fn get_time() -> isize {
+    sys_get_time()
+}
+
+pub fn yield_() {
+    sys_yield();
+}
+
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     loop {}
 }
-pub fn get_time() -> isize { sys_get_time() }
