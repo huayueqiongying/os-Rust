@@ -5,7 +5,10 @@ mod frame_allocator;
 mod memory_set;
 
 pub use address::{PhysAddr, VirtAddr, PhysPageNum, VirtPageNum, VPNRange, StepByOne};
-pub use page_table::{PageTable, PageTableEntry, PTEFlags, translated_byte_buffer};
+pub use page_table::{
+    PageTable, PageTableEntry, PTEFlags,
+    translated_byte_buffer, translated_str, translated_refmut,
+};
 pub use frame_allocator::{FrameTracker, frame_alloc};
 pub use memory_set::{MemorySet, KERNEL_SPACE, MapPermission, remap_test};
 

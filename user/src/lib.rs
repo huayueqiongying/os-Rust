@@ -1,89 +1,80 @@
 #![no_std]
 #![no_main]
+#![feature(alloc_error_handler)]
 
-use core::arch::asm;
+extern crate alloc;
 
-const SYSCALL_WRITE: usize = 64;
-const SYSCALL_EXIT: usize = 93;
-const SYSCALL_YIELD: usize = 124;
-const SYSCALL_GETTIMEOFDAY: usize = 169;
+use buddy_system_allocator::LockedHeap;
 
-fn syscall(id: usize, args: [usize; 3]) -> isize {
-    let mut ret: isize;
-    unsafe {
-        asm!(
-            "ecall",
-            inlateout("x10") args[0] => ret,
-            in("x11") args[1],
-            in("x12") args[2],
-            in("x17") id
-        );
-    }
-    ret
+const USER_HEAP_SIZE: usize = 16384;
+static mut HEAP_SPACE: [u8; USER_HEAP_SIZE] = [0; USER_HEAP_SIZE];
+
+#[global_allocator]
+static HEAP: LockedHeap = LockedHeap::empty();
+
+#[alloc_error_handler]
+pub fn handle_alloc_error(layout: core::alloc::Layout) -> ! {
+    panic!("Heap allocation error, layout = {:?}", layout);
 }
 
-pub fn sys_write(fd: usize, buffer: &[u8]) -> isize {
-    syscall(SYSCALL_WRITE, [fd, buffer.as_ptr() as usize, buffer.len()])
-}
+#[macro_use]
+pub mod console;
+mod syscall;
 
-pub fn sys_exit(exit_code: i32) -> isize {
-    syscall(SYSCALL_EXIT, [exit_code as usize, 0, 0])
-}
+use syscall::*;
 
-pub fn sys_yield() -> isize {
-    syscall(SYSCALL_YIELD, [0, 0, 0])
-}
+pub fn read(fd: usize, buf: &mut [u8]) -> isize { sys_read(fd, buf) }
+pub fn write(fd: usize, buf: &[u8]) -> isize { sys_write(fd, buf) }
+pub fn getpid() -> isize { sys_getpid() }
+pub fn fork() -> isize { sys_fork() }
+pub fn exec(path: &str) -> isize { sys_exec(path) }
 
-pub fn sys_get_time() -> isize {
-    syscall(SYSCALL_GETTIMEOFDAY, [0, 0, 0])
-}
-
-#[macro_export]
-macro_rules! print {
-    ($($arg:tt)*) => ({
-        $crate::io::_print(format_args!($($arg)*));
-    });
-}
-
-#[macro_export]
-macro_rules! println {
-    () => ($crate::print!("\n"));
-    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
-}
-
-pub mod io {
-    use core::fmt::{self, Write};
-    struct Stdout;
-
-    impl Write for Stdout {
-        fn write_str(&mut self, s: &str) -> fmt::Result {
-            super::sys_write(1, s.as_bytes());
-            Ok(())
+pub fn wait(exit_code: &mut i32) -> isize {
+    loop {
+        match sys_waitpid(-1, exit_code as *mut _) {
+            -2 => { yield_(); }
+            exit_pid => return exit_pid,
         }
     }
+}
 
-    pub fn _print(args: fmt::Arguments) {
-        Stdout.write_fmt(args).unwrap();
+pub fn waitpid(pid: usize, exit_code: &mut i32) -> isize {
+    loop {
+        match sys_waitpid(pid as isize, exit_code as *mut _) {
+            -2 => { yield_(); }
+            exit_pid => return exit_pid,
+        }
     }
 }
 
-#[unsafe(no_mangle)]
-#[unsafe(link_section = ".text.entry")]
-pub unsafe extern "C" fn _start() -> ! {
-    unsafe extern "Rust" {
-        fn main();
+pub fn sleep(period_ms: usize) {
+    let start = sys_get_time();
+    while sys_get_time() < start + period_ms as isize {
+        sys_yield();
     }
-    unsafe { main(); }
-    sys_exit(0);
-    loop {}
+}
+
+pub fn yield_() {
+    sys_yield();
 }
 
 pub fn get_time() -> isize {
     sys_get_time()
 }
 
-pub fn yield_() {
-    sys_yield();
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".text.entry")]
+pub unsafe extern "C" fn _start() -> ! {
+    unsafe {
+        HEAP.lock()
+            .init(core::ptr::addr_of_mut!(HEAP_SPACE) as usize, USER_HEAP_SIZE);
+    }
+    unsafe extern "Rust" {
+        fn main();
+    }
+    unsafe { main(); }
+    sys_exit(0);
+    loop {}
 }
 
 #[panic_handler]
